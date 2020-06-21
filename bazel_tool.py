@@ -1,5 +1,20 @@
 #!/usr/bin/env python3
 
+# Read config list of local dependencies
+# - Read .local_deps.toml
+# - Parse local git repositories and local http_files with corresponding repo path and targets:
+#   - Convert relative paths to absolute paths
+
+# Check all local file repositories and update their targets, for each:
+# - Build the target from local file repository
+# - bazel aquery the same target to find the output file
+# - Copy the output file into a secret directory under .local_deps_cache/
+# - Add a WORKSPACE and a file/BUILD for bazel
+
+# Generate the necessary flags to override all of the bazel repositories to local paths
+
+# Perform the regular bazel build command but with these flags
+
 import sys
 import toml
 import os
@@ -156,19 +171,3 @@ if __name__ == "__main__":
         sys.exit(bazel_tool(sys.argv[1:], os.getcwd()).returncode)
     except subprocess.CalledProcessError:
         sys.exit(1)
-
-
-# Read config list of local dependencies
-# - Read .local_deps
-# - Parse local git repositories and local http_files with corresponding repo path and targets:
-#   - Convert relative paths to absolute paths
-
-# Check all local file repositories and update their targets, for each:
-# - Build the target from local file repository
-# - bazel aquery the same target to find the output file (will require parsing textproto)
-# - Copy the output file into a secret directory under /file
-# - Add a WORKSPACE and a file/BUILD for bazel
-
-# Generate the necessary flags to override all of the bazel repositories to local paths
-
-# Perform the regular bazel build command but with these flags
