@@ -71,6 +71,26 @@ def create_cached_dep(repo, binary_apath):
 
     return repo_cache_apath
 
+def transitive_local(dir, local_repositories = {}):
+    dir = os.path.abspath(dir)
+    try:
+        local_deps = toml.load(os.path.join(dir, '.local_deps'))
+        local_deps_repos = {}
+        try:
+            local_deps_repos = local_deps['local_repositories']
+        except KeyError:
+            return
+        
+        for repo, path in local_deps_repos.items():
+            try:
+                local_repositories[repo]
+                return
+            except KeyError:
+                pass
+            local_repositories[repo] = os.path.abspath(os.path.join(dir, path))
+            transitive_local(path, local_repositories)
+    except FileNotFoundError:
+        pass
 
 def bazel_tool(argv, dir, capture_output=False):
     command_pos = 0
@@ -84,15 +104,9 @@ def bazel_tool(argv, dir, capture_output=False):
     if command_pos == len(argv):
         return None # No build command
 
-    local_deps = toml.load(os.path.join(dir, '.local_deps'))
-
-    # Load local repository config and build CLI args
     local_repositories = {}
-    try:
-        local_repositories = local_deps['local_repositories']
-    except KeyError:
-        pass
-
+    transitive_local(dir, local_repositories)
+    
     local_repositories_args = []
     for repo, path in local_repositories.items():
         apath = os.path.abspath(path)
@@ -100,6 +114,7 @@ def bazel_tool(argv, dir, capture_output=False):
         local_repositories_args.append(f'{repo}={apath}')
 
 
+    local_deps = toml.load(os.path.join(dir, '.local_deps'))
     # Load local http_files
     http_files = {}
     try:
