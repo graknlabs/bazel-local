@@ -7,6 +7,9 @@ import subprocess
 import re
 import shutil
 
+local_deps_file = '.local_deps.toml'
+local_deps_dir = '.local_deps_cache'
+
 bazel_commands = [
     'analyze-profile',
     'aquery',
@@ -44,7 +47,7 @@ def resolve_bazel_target(target):
     return target
 
 def create_cached_dep(repo, binary_apath):
-    deps_cache = os.path.abspath('.local_deps_cache')
+    deps_cache = os.path.abspath(local_deps_dir)
     mkdir(deps_cache)
 
     repo_cache_apath = os.path.join(deps_cache, repo)
@@ -74,7 +77,7 @@ def create_cached_dep(repo, binary_apath):
 def transitive_local(dir, local_repositories = {}):
     dir = os.path.abspath(dir)
     try:
-        local_deps = toml.load(os.path.join(dir, '.local_deps'))
+        local_deps = toml.load(os.path.join(dir, local_deps_file))
         local_deps_repos = {}
         try:
             local_deps_repos = local_deps['local_repositories']
@@ -114,7 +117,7 @@ def bazel_tool(argv, dir, capture_output=False):
         local_repositories_args.append(f'{repo}={apath}')
 
 
-    local_deps = toml.load(os.path.join(dir, '.local_deps'))
+    local_deps = toml.load(os.path.join(dir, local_deps_file))
     # Load local http_files
     http_files = {}
     try:
