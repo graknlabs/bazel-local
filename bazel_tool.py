@@ -7,11 +7,41 @@ import subprocess
 import re
 import shutil
 
+bazel_commands = [
+    'analyze-profile',
+    'aquery',
+    'build',
+    'canonicalize-flags',
+    'coverage',
+    'cquery',
+    'dump',
+    'fetch',
+    'mobile-install',
+    'print_action',
+    'query',
+    'run',
+    'sync',
+    'test'
+]
+
 def mkdir(path):
     try:
         os.mkdir(path)
     except FileExistsError:
         pass
+
+# Only valid in base dir
+# TODO make directory dependent
+def resolve_bazel_target(target):
+    if ':' not in target:
+        targetv = target.split('/')
+        targetv[-1] = f'{targetv[-1]}:{targetv[-1]}'
+        target = ''.join(targetv)
+    
+    if not target.startswith('//'):
+        target = f'//{target}'
+    
+    return target
 
 def create_cached_dep(repo, binary_apath):
     deps_cache = os.path.abspath('.local_deps_cache')
@@ -42,51 +72,72 @@ def create_cached_dep(repo, binary_apath):
     return repo_cache_apath
 
 
-local_deps = toml.load('.local_deps')
+def bazel_tool(argv, dir, capture_output=False):
+    command_pos = 0
+    for arg in argv:
+        if (arg == '--'):
+            return None # No build command
+        if arg in bazel_commands:
+            break
+        command_pos += 1
+    
+    if command_pos == len(argv):
+        return None # No build command
 
-# Load local repository config and build CLI args
-local_repositories = {}
-try:
-    local_repositories = local_deps['local_repositories']
-except KeyError:
-    pass
+    local_deps = toml.load(os.path.join(dir, '.local_deps'))
 
-local_repositories_args = []
-for repo, path in local_repositories.items():
-    apath = os.path.abspath(path)
-    local_repositories_args.append('--override_repository')
-    local_repositories_args.append(f'{repo}={apath}')
+    # Load local repository config and build CLI args
+    local_repositories = {}
+    try:
+        local_repositories = local_deps['local_repositories']
+    except KeyError:
+        pass
+
+    local_repositories_args = []
+    for repo, path in local_repositories.items():
+        apath = os.path.abspath(path)
+        local_repositories_args.append('--override_repository')
+        local_repositories_args.append(f'{repo}={apath}')
 
 
-# Load local http_files
-http_files = {}
-try:
-    http_files = local_deps['http_files']
-except KeyError:
-    pass
+    # Load local http_files
+    http_files = {}
+    try:
+        http_files = local_deps['http_files']
+    except KeyError:
+        pass
 
-http_files_args = []
-for repo, path_target in http_files.items():
-    path, target = path_target.split('@')
-    apath = os.path.abspath(path)
+    http_files_args = []
+    for repo, path_target in http_files.items():
+        path, target = path_target.split('@')
+        apath = os.path.abspath(path)
 
-    subprocess.run(['bazel_tool', 'build', target], check=True, cwd=apath)
-    dep_aquery = subprocess.check_output(['bazel_tool', 'aquery', '--output', 'textproto', target], cwd=apath).decode(sys.stdout.encoding)
+        target = resolve_bazel_target(target)
 
-    binary_subpath = re.findall('exec_path: "(.*)"', dep_aquery)[-1]
-    binary_apath = os.path.join(apath, binary_subpath)
-    print(binary_apath)
+        # subprocess.run(['bazel_tool', 'build', target], check=True, cwd=apath)
+        repo_target = f'@{repo}{target}'
+        bazel_tool(['build', target], apath)
+        dep_aquery = bazel_tool(['aquery', '--output', 'textproto', target], apath, capture_output=True).stdout.decode(sys.stdout.encoding)
 
-    repo_cache_apath = create_cached_dep(repo, binary_apath)
+        binary_subpath = re.findall('exec_path: "(.*)"', dep_aquery)[-1]
+        binary_apath = os.path.join(apath, binary_subpath)
 
-    http_files_args.append('--override_repository')
-    http_files_args.append(f'{repo}={repo_cache_apath}')
+        repo_cache_apath = create_cached_dep(repo, binary_apath)
 
-# TODO should split input args by a "--" arg
+        http_files_args.append('--override_repository')
+        http_files_args.append(f'{repo}={repo_cache_apath}')
 
-command_args = ['bazel', sys.argv[1], *local_repositories_args, *http_files_args, *sys.argv[2:]]
-print(' '.join(command_args))
-sys.exit(subprocess.run(command_args, check=True).returncode)
+    command_args = ['bazel', *argv[0:command_pos+1], *local_repositories_args, *http_files_args]
+    if command_pos < len(argv) - 1:
+        command_args.extend(argv[command_pos+1:])
+    print(dir, ' '.join(command_args))
+    return subprocess.run(command_args, check=True, capture_output=capture_output, cwd=dir)
+
+if __name__ == "__main__":
+    try:
+        sys.exit(bazel_tool(sys.argv[1:], os.getcwd()).returncode)
+    except subprocess.CalledProcessError:
+        sys.exit(1)
 
 
 # Read config list of local dependencies
