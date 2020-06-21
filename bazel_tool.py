@@ -144,7 +144,8 @@ def bazel_tool(argv, dir, capture_output=False):
 
     http_files_args = []
     for repo, path_target in http_files.items():
-        path, target = path_target.split('@')
+        path = path_target[0]
+        target = path_target[1]
         apath = os.path.abspath(path)
 
         target = resolve_bazel_target(target)
