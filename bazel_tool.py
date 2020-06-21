@@ -132,11 +132,13 @@ def bazel_tool(argv, dir, capture_output=False):
         local_repositories_args.append(f'{repo}={apath}')
 
 
-    local_deps = toml.load(os.path.join(dir, local_deps_file))
     # Load local http_files
     http_files = {}
     try:
+        local_deps = toml.load(os.path.join(dir, local_deps_file))
         http_files = local_deps['http_files']
+    except FileNotFoundError:
+        pass
     except KeyError:
         pass
 
