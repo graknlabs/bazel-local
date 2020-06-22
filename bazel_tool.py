@@ -18,6 +18,8 @@
 import sys
 import toml
 import os
+import signal
+import time
 import subprocess
 import re
 import shutil
@@ -110,17 +112,17 @@ def transitive_local(dir, local_repositories = {}):
     except FileNotFoundError:
         pass
 
-def bazel_tool(argv, dir, capture_output=False):
+def bazel_tool(argv, dir, capture_output=False, check=False):
     command_pos = 0
     for arg in argv:
         if (arg == '--'):
-            return None # No build command
+            return subprocess.run(['bazel', *argv], check=check, capture_output=capture_output, cwd=dir)
         if arg in bazel_commands:
             break
         command_pos += 1
     
     if command_pos == len(argv):
-        return None # No build command
+        return subprocess.run(['bazel', *argv], check=check, capture_output=capture_output, cwd=dir)
 
     local_repositories = {}
     transitive_local(dir, local_repositories)
@@ -152,8 +154,8 @@ def bazel_tool(argv, dir, capture_output=False):
 
         # subprocess.run(['bazel_tool', 'build', target], check=True, cwd=apath)
         repo_target = f'@{repo}{target}'
-        bazel_tool(['build', target], apath)
-        dep_aquery = bazel_tool(['aquery', '--output', 'textproto', target], apath, capture_output=True).stdout.decode(sys.stdout.encoding)
+        bazel_tool(['build', target], apath, check=True)
+        dep_aquery = bazel_tool(['aquery', '--output', 'textproto', target], apath, capture_output=True, check=True).stdout.decode(sys.stdout.encoding)
 
         binary_subpath = re.findall('exec_path: "(.*)"', dep_aquery)[-1]
         binary_apath = os.path.join(apath, binary_subpath)
@@ -166,11 +168,16 @@ def bazel_tool(argv, dir, capture_output=False):
     command_args = ['bazel', *argv[0:command_pos+1], *local_repositories_args, *http_files_args]
     if command_pos < len(argv) - 1:
         command_args.extend(argv[command_pos+1:])
-    print(dir, ' '.join(command_args))
-    return subprocess.run(command_args, check=True, capture_output=capture_output, cwd=dir)
+
+    full_command = ' '.join(command_args)
+    print(dir, full_command)
+    return subprocess.run(command_args, cwd=dir, check=check, capture_output=capture_output)
+
 
 if __name__ == "__main__":
     try:
         sys.exit(bazel_tool(sys.argv[1:], os.getcwd()).returncode)
-    except subprocess.CalledProcessError:
-        sys.exit(1)
+    except subprocess.CalledProcessError as e:
+        sys.exit(e.returncode)
+    except KeyboardInterrupt:
+        pass        
