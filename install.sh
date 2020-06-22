@@ -10,4 +10,4 @@ curl -sSf https://raw.githubusercontent.com/graknlabs/bazel-local/master/bazel_l
 
 chmod +x "${INSTALL_DIR}/bazel_local.py"
 
-ln -s /usr/local/bin/bazel-local "${INSTALL_DIR}/bazel_local.py"
+ln -s "${INSTALL_DIR}/bazel_local.py" /usr/local/bin/bazel-local
