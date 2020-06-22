@@ -27,7 +27,7 @@ import shutil
 local_deps_file = '.local_deps.toml'
 local_deps_dir = '.local_deps_cache'
 
-unwrapped_bazel_command = 'bazel-unwrapped'
+unwrapped_bazel_command = '/usr/local/bin/bazel'
 
 bazel_commands = [
     'analyze-profile',

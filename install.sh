@@ -1,7 +1,5 @@
 set -ex
 
-mv /usr/local/bin/bazel /usr/local/bin/bazel-unwrapped
-
 INSTALL_DIR=~/.local_deps
 
 mkdir -p "${INSTALL_DIR}"
@@ -12,6 +10,4 @@ curl -sSf https://raw.githubusercontent.com/graknlabs/bazel-local/master/bazel_l
 
 chmod +x "${INSTALL_DIR}/bazel_local.py"
 
-
-
-ln -s /usr/local/bin/bazel
+ln -s /usr/local/bin/bazel-local "${INSTALL_DIR}/bazel_local.py"

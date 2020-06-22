@@ -8,7 +8,7 @@ A wrapper to run `bazel` with locally overriden dependencies.
 
 ## Usage
 
-Installed in place of the regular `bazel` command when running bazel, use `bazel-unwrapped` for the unwrapped version.
+Use the `bazel-local` command in place of `bazel`.
 
 To enable local dependency overriding, create a `.local_deps.toml` in the root of your bazel workspace. An example is shown:
 
@@ -22,3 +22,11 @@ graknlabs_grakn_common = "../common"
 [http_files]
 graknlabs_console = ["../console", "//:console-deps"]
 ```
+
+## Enable/Disable
+
+Disable by resetting the unwrapped link.
+
+`rm /usr/local/bin/bazel && mv /usr/local/bin/bazel-unwrapped /usr/local/bin/bazel`
+
+Enable by resetting the wrapper link.
