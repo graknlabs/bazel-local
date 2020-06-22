@@ -4,7 +4,7 @@ A wrapper to run `bazel` with locally overriden dependencies.
 
 ## Intallation
 
-`curl -sSf https://raw.githubusercontent.com/graknlabs/bazel-local/master/install.sh | echo`
+`curl -sSf https://raw.githubusercontent.com/graknlabs/bazel-local/master/install.sh | sh`
 
 ## Usage
 
