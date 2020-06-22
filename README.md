@@ -23,6 +23,8 @@ graknlabs_grakn_common = "../common"
 graknlabs_console = ["../console", "//:console-deps"]
 ```
 
+You should add `.local_deps*` to your `.gitignore`.
+
 ## Enable/Disable
 
 Disable by resetting the unwrapped link.

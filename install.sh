@@ -1,6 +1,6 @@
 set -ex
 
-INSTALL_DIR=~/.local_deps
+INSTALL_DIR=~/.bazel-local
 
 mkdir -p "${INSTALL_DIR}"
 
