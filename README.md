@@ -24,11 +24,3 @@ graknlabs_console = ["../console", "//:console-deps"]
 ```
 
 You should add `.local_deps*` to your `.gitignore`.
-
-## Enable/Disable
-
-Disable by resetting the unwrapped link.
-
-`rm /usr/local/bin/bazel && mv /usr/local/bin/bazel-unwrapped /usr/local/bin/bazel`
-
-Enable by resetting the wrapper link.
