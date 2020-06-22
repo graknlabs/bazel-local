@@ -1,4 +1,4 @@
-# `bazel-tool`
+# `bazel-local`
 
 A wrapper to run `bazel` with locally overriden dependencies.
 
